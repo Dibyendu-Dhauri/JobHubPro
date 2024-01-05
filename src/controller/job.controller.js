@@ -1,7 +1,8 @@
 const Jobs = require("../models/job.model");
 const createError = require("../utils/error");
+const cloudinary = require("cloudinary").v2
 
-const addJob = async (req, res, next) => {
+const postJob = async (req, res, next) => {
   try {
     const {
       companyName,
@@ -34,7 +35,12 @@ const addJob = async (req, res, next) => {
     }
     const skillsArray = skills.split(",").map((item) => item.trim());
 
-    const newJob = new Jobs({ ...req.body, skills: skillsArray });
+    const imageUrl = await cloudinary.uploader.upload(
+      req.body?.logoUrl,
+      { resource_type: 'auto'},
+    );
+
+    const newJob = new Jobs({ ...req.body, skills: skillsArray, logoUrl: imageUrl.url });
     await newJob.save();
     res.status(200).json({
       message: "successful",
@@ -45,7 +51,7 @@ const addJob = async (req, res, next) => {
   }
 };
 
-const editJob = async (req, res, next) => {
+const updateJob = async (req, res, next) => {
   try {
     const jobId = req.params.id;
     if (!jobId) return next(createError(401, "Job Id is required"));
@@ -58,10 +64,14 @@ const editJob = async (req, res, next) => {
     if (req.body?.skills) {
       skillsArray = req.body?.skills.split(",").map((item) => item.trim());
     }
+    const imageUrl = await cloudinary.uploader.upload(
+      req.body?.logoUrl,
+      {resource_type: 'auto'}
+    );
     
     const updatedJob = await Jobs.findByIdAndUpdate(
       jobId,
-      { $set: { ...req.body, skills: skillsArray } },
+      { $set: { ...req.body, skills: skillsArray, logoUrl: imageUrl.url } },
       { new: true }
     );
     res.status(200).json({
@@ -73,7 +83,7 @@ const editJob = async (req, res, next) => {
   }
 };
 
-const getAllJob = async (req, res, next) => {
+const getJobs = async (req, res, next) => {
   try {
     const getJob = await Jobs.find();
     if (!getJob) {
@@ -117,9 +127,9 @@ const getJobDetails = async (req, res, next) => {
   }
 };
 module.exports = {
-  addJob,
-  editJob,
-  getAllJob,
+  postJob,
+  updateJob,
+  getJobs,
   getFilterJob,
   getJobDetails,
 };

@@ -1,19 +1,19 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-const cookieParser = require("cookie-parser")
-const cors = require("cors")
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const cloudinary = require("cloudinary").v2;
 
-const userRouter = require("./routes/user.routes");
-const jobsRouter = require("./routes/job.routes")
+const userRouter = require("./src/routes/user.routes");
+const jobsRouter = require("./src/routes/job.routes");
 
 const app = express();
 dotenv.config();
 app.use(express.json());
-app.use(express.urlencoded({extended:false}));
-app.use(cookieParser())
-app.use(cors({origin:process.env.BASE_ORIGIN, credentials:true}))
-
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(cors({ origin: process.env.BASE_ORIGIN, credentials: true }));
 
 // mongoDB connection
 const connect = async () => {
@@ -30,13 +30,21 @@ mongoose.connection.on("disconnected", () => {
   console.log("mongoDB disconnected!");
 });
 
-app.use("/api/auth", userRouter);
-app.use("/api/jobs",jobsRouter)
+// cloudinary configuration
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
+});
+
+app.use("/api/auth", userRouter); 
+app.use("/api/jobs", jobsRouter);
 
 // error handling middleware
 app.use((err, req, res, next) => {
   const errorStatus = err.status || 500;
-  const errorMessage = err.message || "Something went wrong! Please try after some time.";
+  const errorMessage =
+    err.message || "Something went wrong! Please try after some time.";
   return res.status(errorStatus).json({
     success: false,
     status: errorStatus,
@@ -52,7 +60,7 @@ app.use((req, res, next) => {
   });
 });
 
-app.listen( process.env.PORT || 8003, () => {
+app.listen(process.env.PORT || 8003, () => {
   connect();
   console.log("server is started");
 });
